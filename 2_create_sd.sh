@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 set -e
-# set -x
+set -x
 
 . ./consts.sh
 
@@ -67,11 +67,11 @@ fi
 ${SUDO} dd if=/dev/zero of="${DEVICE}" bs=1M count=40
 ${SUDO} parted -s -a optimal -- "${DEVICE}" mklabel gpt
 ${SUDO} parted -s -a optimal -- "${DEVICE}" mkpart primary fat32 40MiB 1024MiB
-${SUDO} parted -s -a optimal -- "${DEVICE}" mkpart primary ext4 1064MiB 100%
+${SUDO} parted -s -a optimal -- "${DEVICE}" mkpart primary btrfs 1064MiB 100%
 ${SUDO} partprobe "${DEVICE}"
 PART_IDENTITYFIER=$(probe_partition_separator "${DEVICE}")
 ${SUDO} mkfs.ext2 -F -L boot "${DEVICE}${PART_IDENTITYFIER}1"
-${SUDO} mkfs.ext4 -F -L root "${DEVICE}${PART_IDENTITYFIER}2"
+${SUDO} mkfs.btrfs -L root "${DEVICE}${PART_IDENTITYFIER}2"
 
 # flash boot things
 ${SUDO} dd if="${OUT_DIR}/u-boot-sunxi-with-spl.bin" of="${DEVICE}" bs=1024 seek=128
@@ -95,7 +95,7 @@ ${SUDO} cp -a "${OUT_DIR}/modules/${KERNEL_RELEASE}" "${MNT}/lib/modules"
 ${SUDO} install -D -p -m 644 "${OUT_DIR}/8723ds.ko" "${MNT}/lib/modules/${KERNEL_RELEASE}/kernel/drivers/net/wireless/8723ds.ko"
 
 ${SUDO} rm "${MNT}/lib/modules/${KERNEL_RELEASE}/build"
-${SUDO} rm "${MNT}/lib/modules/${KERNEL_RELEASE}/source"
+#${SUDO} rm "${MNT}/lib/modules/${KERNEL_RELEASE}/source"
 
 ${SUDO} depmod -a -b "${MNT}" "${KERNEL_RELEASE}"
 echo '8723ds' >>8723ds.conf
@@ -109,7 +109,7 @@ elif [ "${BOOT_METHOD}" = 'extlinux' ]; then
     (
         echo "label default
         linux   /Image
-        append  earlycon=sbi console=ttyS0,115200n8 root=/dev/mmcblk0p2 rootwait cma=96M"
+        append  mitigations=off earlycon=sbi console=ttyS0,115200n8 root=/dev/mmcblk0p2 rootwait"
     ) >extlinux.conf
     ${SUDO} mv extlinux.conf "${MNT}/boot/extlinux/extlinux.conf"
 fi
@@ -118,7 +118,7 @@ fi
 (
     echo '# <device>    <dir>        <type>        <options>            <dump> <pass>
 LABEL=boot    /boot        ext2          rw,defaults,noatime  0      1
-LABEL=root    /            ext4          rw,defaults,noatime  0      2'
+LABEL=root    /            btrfs         rw,defaults,noatime  0      2'
 ) >fstab
 ${SUDO} mv fstab "${MNT}/etc/fstab"
 
@@ -131,6 +131,27 @@ ${SUDO} mv hostname "${MNT}/etc/"
 # ${SUDO} arch-chroot ${MNT} pacman -S wpa_supplicant
 # ${SUDO} arch-chroot ${MNT} pacman -S netctl
 # ${SUDO} arch-chroot ${MNT} pacman -S --asdeps dialog
+${SUDO} arch-chroot ${MNT} pacman -Syu
+${SUDO} arch-chroot ${MNT} pacman -S dhclient
+${SUDO} arch-chroot ${MNT} pacman -S dhcpcd
+${SUDO} arch-chroot ${MNT} pacman -S --asdeps dialog
+${SUDO} arch-chroot ${MNT} pacman -S ell
+${SUDO} arch-chroot ${MNT} pacman -S glibc
+${SUDO} arch-chroot ${MNT} pacman -S ifplugd
+${SUDO} arch-chroot ${MNT} pacman -S iwd
+${SUDO} arch-chroot ${MNT} pacman -S libdaemon
+${SUDO} arch-chroot ${MNT} pacman -S nano
+${SUDO} arch-chroot ${MNT} pacman -S ncurses
+${SUDO} arch-chroot ${MNT} pacman -S netctl
+${SUDO} arch-chroot ${MNT} pacman -S run-parts
+${SUDO} arch-chroot ${MNT} pacman -S systemd-resolvconf
+${SUDO} arch-chroot ${MNT} pacman -S wireless_tools
+${SUDO} arch-chroot ${MNT} pacman -S wpa_supplicant
+${SUDO} arch-chroot ${MNT} pacman -S gcc
+${SUDO} arch-chroot ${MNT} pacman -S vim
+${SUDO} arch-chroot ${MNT} pacman -S git
+${SUDO} arch-chroot ${MNT} pacman -S openssh
+${SUDO} arch-chroot ${MNT} pacman -S btrfs-progs
 
 # done
 if [ "${USE_CHROOT}" != 0 ]; then

@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 set -e
-# set -x
+set -x
 
 . ./consts.sh
 
@@ -34,12 +34,15 @@ patch_config() {
     case "$val" in
     'y')
         _OP='--enable'
+        ./scripts/config --file "../${DIR}-build/.config" "$_OP" "$key"
         ;;
     'n')
-        _OP='--disable'
+        _OP='--set-val'
+        ./scripts/config --file "../${DIR}-build/.config" "$_OP" "$key" "$val"
         ;;
     'm')
         _OP='--module'
+        ./scripts/config --file "../${DIR}-build/.config" "$_OP" "$key"
         ;;
     *)
         echo "Unknown kernel option value '$KERNEL'"
@@ -51,7 +54,6 @@ patch_config() {
         exit 1
     fi
 
-    ./scripts/config --file "../${DIR}-build/.config" "$_OP" "$key"
 }
 
 for DEP in riscv64-linux-gnu-gcc swig cpio; do
@@ -78,7 +80,9 @@ if [ ! -f "${OUT_DIR}/u-boot-sunxi-with-spl.bin" ]; then
     clean_dir ${DIR}
 
     git clone --depth 1 "${SOURCE_UBOOT}" -b "${TAG_UBOOT}"
+    cp ../uboot.patch ${DIR}
     cd ${DIR}
+    patch -p1 < uboot.patch
     pin_commit "${COMMIT_UBOOT}"
 
     make CROSS_COMPILE="${CROSS_COMPILE}" ARCH="${ARCH}" nezha_defconfig
@@ -95,11 +99,12 @@ if [ ! -f "${OUT_DIR}/Image" ] || [ ! -f "${OUT_DIR}/Image.gz" ]; then
     clean_dir ${DIR}-modules
 
     curl -O -L ${SOURCE_KERNEL}
-    tar -xf "v${VERSION_KERNEL}.tar.gz"
-    rm "v${VERSION_KERNEL}.tar.gz"
+    tar -xf "linux-${VERSION_KERNEL}.tar.gz"
+    rm "linux-${VERSION_KERNEL}.tar.gz"
     mv linux-${VERSION_KERNEL} ${DIR}
+    cp ../xtheadvector-6.12.1-new.patch $DIR
     cd ${DIR}
-
+    patch -p1 < ./xtheadvector-6.12.1-new.patch
     # fix kernel version
     touch .scmversion
 
@@ -107,6 +112,7 @@ if [ ! -f "${OUT_DIR}/Image" ] || [ ! -f "${OUT_DIR}/Image.gz" ]; then
     'defconfig')
         # generate default config
         make ARCH="${ARCH}" O=../linux-build defconfig
+	make ARCH="${ARCH}" O=../linux-build menuconfig
 
         # patch necessary options
         # patch_config LOCALVERSION_AUTO n #### not necessary with a release kernel
@@ -177,6 +183,7 @@ if [ ! -f "${OUT_DIR}/Image" ] || [ ! -f "${OUT_DIR}/Image.gz" ]; then
 
         # enable binfmt_misc
         patch_config BINFMT_MISC y
+	patch_config ERRATA_THEAD_GHOSTWRITE n
 
         # debug options
         if [ $DEBUG = 'y' ]; then
