@@ -64,6 +64,8 @@ if [ -z "${CI_BUILD}" ]; then
     read -r confirm && [ "${confirm}" = "y" ] || [ "${confirm}" = "Y" ] || exit 1
 fi
 
+${SUDO} mkinitcpio -H btrfs
+
 ${SUDO} dd if=/dev/zero of="${DEVICE}" bs=1M count=40
 ${SUDO} parted -s -a optimal -- "${DEVICE}" mklabel gpt
 ${SUDO} parted -s -a optimal -- "${DEVICE}" mkpart primary fat32 40MiB 1024MiB

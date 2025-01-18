@@ -21,7 +21,7 @@ There are multiple sources for an Archlinux image:
 - RootFS based on https://archriscv.felixc.at (root password is ~~`sifive`~~ `archriscv`)
 
 ## How to build
-1. Install requirements: `pacman -Sy riscv64-linux-gnu-gcc swig cpio python3 python-setuptools base-devel bc btrfs-progs`
+1. Install requirements: `pacman -Sy riscv64-linux-gnu-gcc swig cpio python3 python-setuptools base-devel bc btrfs-progs python-packaging grub-btrfs`
    1. If you want to `chroot` into the RISC-V image, you also need `arch-install-scripts qemu-user-static qemu-user-static-binfmt`
 1. Edit `consts.sh` to your needs. For example, you may want to select a [different DTB](https://github.com/sehraf/riscv-arch-image-builder/blob/5c450da98d578617781ae13f9d2b0850a61b21c4/consts.sh#L22) for a different board variant.
 1. Run `1_compile.sh` which compiles everything into the `output` folder.

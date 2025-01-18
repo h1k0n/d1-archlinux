@@ -80,9 +80,10 @@ if [ ! -f "${OUT_DIR}/u-boot-sunxi-with-spl.bin" ]; then
     clean_dir ${DIR}
 
     git clone --depth 1 "${SOURCE_UBOOT}" -b "${TAG_UBOOT}"
-    cp ../uboot.patch ${DIR}
+    cp ../uboot.patch ../fdt.patch ${DIR}
     cd ${DIR}
     patch -p1 < uboot.patch
+    patch -p1 < fdt.patch
     pin_commit "${COMMIT_UBOOT}"
 
     make CROSS_COMPILE="${CROSS_COMPILE}" ARCH="${ARCH}" nezha_defconfig
@@ -99,8 +100,8 @@ if [ ! -f "${OUT_DIR}/Image" ] || [ ! -f "${OUT_DIR}/Image.gz" ]; then
     clean_dir ${DIR}-modules
 
     curl -O -L ${SOURCE_KERNEL}
-    tar -xf "linux-${VERSION_KERNEL}.tar.gz"
-    rm "linux-${VERSION_KERNEL}.tar.gz"
+    tar -xf "v${VERSION_KERNEL}.tar.gz"
+    rm "v${VERSION_KERNEL}.tar.gz"
     mv linux-${VERSION_KERNEL} ${DIR}
     cp ../xtheadvector-6.12.1-new.patch $DIR
     cd ${DIR}
@@ -240,6 +241,7 @@ if [ ! -f "${OUT_DIR}/8723ds.ko" ]; then
 
     git clone "${SOURCE_RTL8723}"
     cd ${DIR}
+    export USER_EXTRA_CFLAGS=-Wno-error=incompatible-pointer-types
     make CROSS_COMPILE="${CROSS_COMPILE}" ARCH="${ARCH}" KSRC=../linux-build -j "${NPROC}" modules || true
     cd ..
     cp ${DIR}/8723ds.ko "${OUT_DIR}"

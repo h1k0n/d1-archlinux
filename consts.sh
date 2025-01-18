@@ -42,12 +42,12 @@ export USE_CHROOT=1
 export BOOT_METHOD='extlinux'
 
 export VERSION_OPENSBI='1.4'
-export VERSION_KERNEL='6.12.1'
+export VERSION_KERNEL='6.13-rc7'
 
 export SOURCE_OPENSBI="https://github.com/riscv-software-src/opensbi/releases/download/v${VERSION_OPENSBI}/opensbi-${VERSION_OPENSBI}-rv-bin.tar.xz"
 export SOURCE_UBOOT='https://github.com/smaeul/u-boot'
-# export SOURCE_KERNEL="https://github.com/torvalds/linux/archive/refs/tags/v${VERSION_KERNEL}.tar.gz"
-export SOURCE_KERNEL="https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/snapshot/linux-${VERSION_KERNEL}.tar.gz"
+export SOURCE_KERNEL="https://github.com/torvalds/linux/archive/refs/tags/v${VERSION_KERNEL}.tar.gz"
+#export SOURCE_KERNEL="https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/snapshot/linux-${VERSION_KERNEL}.tar.gz"
 export SOURCE_RTL8723='https://github.com/lwfinger/rtl8723ds.git'
 # https://github.com/karabek/xradio
 
