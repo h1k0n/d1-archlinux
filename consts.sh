@@ -42,7 +42,7 @@ export USE_CHROOT=1
 export BOOT_METHOD='extlinux'
 
 export VERSION_OPENSBI='1.4'
-export VERSION_KERNEL='6.13-rc7'
+export VERSION_KERNEL='6.13'
 
 export SOURCE_OPENSBI="https://github.com/riscv-software-src/opensbi/releases/download/v${VERSION_OPENSBI}/opensbi-${VERSION_OPENSBI}-rv-bin.tar.xz"
 export SOURCE_UBOOT='https://github.com/smaeul/u-boot'
