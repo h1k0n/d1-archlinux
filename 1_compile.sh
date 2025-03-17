@@ -103,9 +103,9 @@ if [ ! -f "${OUT_DIR}/Image" ] || [ ! -f "${OUT_DIR}/Image.gz" ]; then
     tar -xf "v${VERSION_KERNEL}.tar.gz"
     rm "v${VERSION_KERNEL}.tar.gz"
     mv linux-${VERSION_KERNEL} ${DIR}
-    cp ../xtheadvector-6.12.1-new.patch $DIR
+    #cp ../xtheadvector-6.12.1-new.patch $DIR
     cd ${DIR}
-    patch -p1 < ./xtheadvector-6.12.1-new.patch
+    #patch -p1 < ./xtheadvector-6.12.1-new.patch
     # fix kernel version
     touch .scmversion
 
@@ -240,7 +240,9 @@ if [ ! -f "${OUT_DIR}/8723ds.ko" ]; then
     clean_dir ${DIR}
 
     git clone "${SOURCE_RTL8723}"
+    cp ../rtl.patch "${DIR}"
     cd ${DIR}
+    patch -p1 < rtl.patch
     export USER_EXTRA_CFLAGS=-Wno-error=incompatible-pointer-types
     make CROSS_COMPILE="${CROSS_COMPILE}" ARCH="${ARCH}" KSRC=../linux-build -j "${NPROC}" modules || true
     cd ..
