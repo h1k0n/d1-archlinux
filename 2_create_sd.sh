@@ -133,27 +133,27 @@ ${SUDO} mv hostname "${MNT}/etc/"
 # ${SUDO} arch-chroot ${MNT} pacman -S wpa_supplicant
 # ${SUDO} arch-chroot ${MNT} pacman -S netctl
 # ${SUDO} arch-chroot ${MNT} pacman -S --asdeps dialog
-${SUDO} arch-chroot ${MNT} pacman -Syu
-${SUDO} arch-chroot ${MNT} pacman -S dhclient
-${SUDO} arch-chroot ${MNT} pacman -S dhcpcd
-${SUDO} arch-chroot ${MNT} pacman -S --asdeps dialog
-${SUDO} arch-chroot ${MNT} pacman -S ell
-${SUDO} arch-chroot ${MNT} pacman -S glibc
-${SUDO} arch-chroot ${MNT} pacman -S ifplugd
-${SUDO} arch-chroot ${MNT} pacman -S iwd
-${SUDO} arch-chroot ${MNT} pacman -S libdaemon
-${SUDO} arch-chroot ${MNT} pacman -S nano
-${SUDO} arch-chroot ${MNT} pacman -S ncurses
-${SUDO} arch-chroot ${MNT} pacman -S netctl
-${SUDO} arch-chroot ${MNT} pacman -S run-parts
-${SUDO} arch-chroot ${MNT} pacman -S systemd-resolvconf
-${SUDO} arch-chroot ${MNT} pacman -S wireless_tools
-${SUDO} arch-chroot ${MNT} pacman -S wpa_supplicant
-${SUDO} arch-chroot ${MNT} pacman -S gcc
-${SUDO} arch-chroot ${MNT} pacman -S vim
-${SUDO} arch-chroot ${MNT} pacman -S git
-${SUDO} arch-chroot ${MNT} pacman -S openssh
-${SUDO} arch-chroot ${MNT} pacman -S btrfs-progs
+${SUDO} arch-chroot ${MNT} pacman -Syu --noconfirm
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm dhclient
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm dhcpcd
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --asdeps dialog
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm ell
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm glibc
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm ifplugd
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm iwd
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm libdaemon
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm nano
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm ncurses
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm netctl
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm run-parts
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm systemd-resolvconf
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm wireless_tools
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm wpa_supplicant
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm gcc
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm vim
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm git
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm openssh
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm btrfs-progs
 
 # done
 if [ "${USE_CHROOT}" != 0 ]; then
