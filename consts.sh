@@ -41,6 +41,10 @@ export USE_CHROOT=1
 # use extlinux ('extlinux') or boot.scr ('script') for loading the kernel?
 export BOOT_METHOD='extlinux'
 
+# use btrfs subvolumes?
+export USE_BTRFS_SUBVOLS=1
+export BTRFS_SUBVOLS="@ @home @var @snapshots"
+
 export VERSION_OPENSBI='1.4'
 export VERSION_KERNEL='6.14-rc7'
 

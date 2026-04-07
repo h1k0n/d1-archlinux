@@ -44,7 +44,7 @@ DEVICE=${1}
 
 if [ "${USE_CHROOT}" != 0 ]; then
     # check_deps for arch-chroot on non RISC-V host
-    for DEP in arch-install-scripts qemu-user-static qemu-user-static-binfmt; do
+    for DEP in arch-install-scripts qemu-user-static qemu-user-static-binfmt btrfs-progs; do
         check_deps ${DEP}
     done
 fi
@@ -80,7 +80,31 @@ ${SUDO} dd if="${OUT_DIR}/u-boot-sunxi-with-spl.bin" of="${DEVICE}" bs=1024 seek
 
 # mount it
 mkdir -p "${MNT}"
-${SUDO} mount "${DEVICE}${PART_IDENTITYFIER}2" "${MNT}"
+
+if [ "${USE_BTRFS_SUBVOLS}" = "1" ]; then
+    # create subvolumes
+    TMP_BTRFS_MNT=$(mktemp -d)
+    ${SUDO} mount "${DEVICE}${PART_IDENTITYFIER}2" "${TMP_BTRFS_MNT}"
+    for SUBVOL in ${BTRFS_SUBVOLS}; do
+        ${SUDO} btrfs subvolume create "${TMP_BTRFS_MNT}/${SUBVOL}"
+    done
+    ${SUDO} umount "${TMP_BTRFS_MNT}"
+    rmdir "${TMP_BTRFS_MNT}"
+
+    # mount subvolumes
+    ${SUDO} mount -o subvol=@ "${DEVICE}${PART_IDENTITYFIER}2" "${MNT}"
+    for SUBVOL in ${BTRFS_SUBVOLS}; do
+        [ "${SUBVOL}" = "@" ] && continue
+        # convert @home -> home, @var -> var, @snapshots -> .snapshots (if it starts with @)
+        MOUNT_POINT="${SUBVOL#@}"
+        [ "${SUBVOL}" = "@snapshots" ] && MOUNT_POINT=".snapshots"
+        ${SUDO} mkdir -p "${MNT}/${MOUNT_POINT}"
+        ${SUDO} mount -o "subvol=${SUBVOL}" "${DEVICE}${PART_IDENTITYFIER}2" "${MNT}/${MOUNT_POINT}"
+    done
+else
+    ${SUDO} mount "${DEVICE}${PART_IDENTITYFIER}2" "${MNT}"
+fi
+
 ${SUDO} mkdir -p "${MNT}/boot"
 ${SUDO} mount "${DEVICE}${PART_IDENTITYFIER}1" "${MNT}/boot"
 
@@ -108,20 +132,35 @@ if [ "${BOOT_METHOD}" = 'script' ]; then
     ${SUDO} cp "${OUT_DIR}/boot.scr" "${MNT}/boot/"
 elif [ "${BOOT_METHOD}" = 'extlinux' ]; then
     ${SUDO} mkdir -p "${MNT}/boot/extlinux"
+    ROOT_FLAGS=""
+    [ "${USE_BTRFS_SUBVOLS}" = "1" ] && ROOT_FLAGS="rootflags=subvol=@"
     (
         echo "label default
         linux   /Image
-        append  mitigations=off earlycon=sbi console=ttyS0,115200n8 root=/dev/mmcblk0p2 rootwait"
+        append  mitigations=off earlycon=sbi console=ttyS0,115200n8 root=/dev/mmcblk0p2 rootwait ${ROOT_FLAGS}"
     ) >extlinux.conf
     ${SUDO} mv extlinux.conf "${MNT}/boot/extlinux/extlinux.conf"
 fi
 
 # fstab
-(
-    echo '# <device>    <dir>        <type>        <options>            <dump> <pass>
+if [ "${USE_BTRFS_SUBVOLS}" = "1" ]; then
+    (
+        echo '# <device>    <dir>        <type>        <options>            <dump> <pass>
+LABEL=boot    /boot        ext2          rw,defaults,noatime  0      1'
+        for SUBVOL in ${BTRFS_SUBVOLS}; do
+            MOUNT_POINT="/"
+            [ "${SUBVOL}" != "@" ] && MOUNT_POINT="/${SUBVOL#@}"
+            [ "${SUBVOL}" = "@snapshots" ] && MOUNT_POINT="/.snapshots"
+            echo "LABEL=root    ${MOUNT_POINT}            btrfs         rw,defaults,noatime,subvol=${SUBVOL}  0      2"
+        done
+    ) >fstab
+else
+    (
+        echo '# <device>    <dir>        <type>        <options>            <dump> <pass>
 LABEL=boot    /boot        ext2          rw,defaults,noatime  0      1
 LABEL=root    /            btrfs         rw,defaults,noatime  0      2'
-) >fstab
+    ) >fstab
+fi
 ${SUDO} mv fstab "${MNT}/etc/fstab"
 
 # set hostname
@@ -133,28 +172,29 @@ ${SUDO} mv hostname "${MNT}/etc/"
 # ${SUDO} arch-chroot ${MNT} pacman -S wpa_supplicant
 # ${SUDO} arch-chroot ${MNT} pacman -S netctl
 # ${SUDO} arch-chroot ${MNT} pacman -S --asdeps dialog
+${SUDO} arch-chroot ${MNT} sed -i 's/^#DisableSandbox/DisableSandbox/' /etc/pacman.conf
 ${SUDO} arch-chroot ${MNT} pacman -Syu --noconfirm
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm dhclient
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm dhcpcd
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --asdeps dialog
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm ell
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm glibc
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm ifplugd
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm iwd
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm libdaemon
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm nano
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm ncurses
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm netctl
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm run-parts
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm systemd-resolvconf
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm wireless_tools
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm wpa_supplicant
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm gcc
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm vim
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm git
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm openssh
-${SUDO} arch-chroot ${MNT} pacman -S --noconfirm btrfs-progs
-
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox dhclient
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox dhcpcd
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --asdeps --disable-sandbox dialog
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox ell
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox glibc
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox ifplugd
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox iwd
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox libdaemon
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox nano
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox ncurses
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox netctl
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox run-parts
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox systemd-resolvconf
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox wireless_tools
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox wpa_supplicant
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox gcc
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox vim
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox git
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox openssh
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox btrfs-progs
+${SUDO} arch-chroot ${MNT} pacman -S --noconfirm --disable-sandbox parted
 # done
 if [ "${USE_CHROOT}" != 0 ]; then
     echo ''
